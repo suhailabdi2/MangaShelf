@@ -1,24 +1,34 @@
 const mongoose = require("mongoose");
 const mangaSchema = new mongoose.Schema({
+    mal_id:{
+        type:String,
+        required:true,
+        unique:true
+    },
+    coverImage:{
+        type:String,
+        required:true
+    },
     mangaTitle:{
         type:String,
         required:true
     },
     publishedFrom:{
         type:Date,
-        required:true
     },
     score:{
         type:Number,
-        required:true
+        min:0,
+        max:10,
+        default:0
     },
     synopsis:{
         type:String,
-        required:true
+        default:"No synopsis available"
     },
     author:{
         type:String,
-        required:true
+        default:"Unknown"
     },
 });
-model.exports = mongoose.model("Manga",mangaSchema);
+module.exports = mongoose.model("Manga",mangaSchema);

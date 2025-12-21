@@ -3,7 +3,9 @@ require("dotenv").config();
 const connectDB = async () => {
     try {
         console.log(process.env.MONGO_DB_CONNECTION_STRING);
-        await mongoose.connect(process.env.MONGO_DB_CONNECTION_STRING);
+        await mongoose.connect(process.env.MONGO_DB_CONNECTION_STRING,{
+            dbName:"MangaShelf"
+        });
         console.log("MongoDB connected");
     } catch (err) {
         console.error(err.message);
