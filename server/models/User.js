@@ -17,4 +17,5 @@ const userSchema = new mongoose.Schema({
         select: false // Excludes password by default in queries
   },
 },{timestamps:true});
-model.exports = mongoose.model("User",userSchema);
+
+module.exports = mongoose.model("User",userSchema);
