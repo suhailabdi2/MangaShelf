@@ -22,6 +22,10 @@ const mangaSchema = new mongoose.Schema({
         max:10,
         default:0
     },
+    reviewCount:{
+        type:Number,
+        default:0
+    },
     synopsis:{
         type:String,
         default:"No synopsis available"

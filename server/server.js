@@ -5,10 +5,12 @@ const app = express();
 const connectDB= require("./config/db");
 const mangaRoutes= require("./routes/mangaRoutes");
 const userRoutes = require("./routes/userRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
 connectDB();
 app.use(express.json());
 app.use("/api/users",userRoutes);
 app.use("/api/manga",mangaRoutes);
+app.use("/api/review",reviewRoutes);
 // app.use("/api/manga",)
 app.get("/", (req,res)=> {
     console.log("Server works");

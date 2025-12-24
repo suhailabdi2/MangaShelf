@@ -16,14 +16,13 @@ const userSchema = new mongoose.Schema({
         minlength: 6,
   },
 },{timestamps:true});
-userSchema.pre("save",async function(next){
-    if(!this.isModified('password')) return next();
-    try{
+userSchema.pre("save", async function() {
+    if (!this.isModified('password')) return;
+    try {
         const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password,salt);
-        next();
-    }catch(error){
-        next(error);
+        this.password = await bcrypt.hash(this.password, salt);
+    } catch (error) {
+        throw error;
     }
 });
 userSchema.methods.comparePassword = async function(candidatePassword) {
