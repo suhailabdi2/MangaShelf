@@ -54,6 +54,55 @@ async function createReview(req,res) {
         session.endSession();
     }
 }
+async function deleteReview(req,res){
+    const { mal_id, reviewId } = req.params;
+    const userId = req.user?.userId || req.user?._id;
+    if (!userId) {
+        return res.status(401).json({ error: "No user id" });
+    }
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+        ? new mongoose.Types.ObjectId(userId) 
+        : userId;
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try{
+        const manga = await Manga.findOne({ mal_id }).session(session);
+        if(!manga){
+            await session.abortTransaction();
+            return res.status(404).json({ error: "Manga not found" });
+        }
+        const review = await Review.findOne({ _id: reviewId, mangaId: manga._id }).session(session);
+        if(!review){
+            await session.abortTransaction();
+            return res.status(404).json({ error: "Review not found" });
+        }
+        // Only the owner can delete their review
+        if(review.userId.toString() !== userObjectId.toString()){
+            await session.abortTransaction();
+            return res.status(403).json({ error: "Not authorized to delete this review" });
+        }
+        const rating = Number(review.rating);
+        await review.deleteOne({ session });
+        const newCount = Math.max(0, manga.reviewCount - 1);
+        if(newCount === 0){
+            manga.reviewCount = 0;
+            manga.score = 0;
+        } else {
+            manga.score = ((manga.score * manga.reviewCount) - rating) / newCount;
+            manga.reviewCount = newCount;
+        }
+        await manga.save({ session });
+        await session.commitTransaction();
+        return res.status(200).json({ message: "Review deleted" });
+    }catch(error){
+        await session.abortTransaction();
+        console.error(error);
+        return res.status(500).json({ error: "Failed to delete review" });
+    }finally{
+        session.endSession();
+    }
+}
 module.exports = {
-    createReview
+    createReview,
+    deleteReview
 }
