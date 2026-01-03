@@ -3,8 +3,8 @@ const router = express.Router();
 const controller = require("../controllers/reviewController");
 const authenticate  = require("../middleware/auth");
 router.post("/postreview/:mal_id",authenticate,controller.createReview);
-
-// Delete a review by id for a specific manga
+router.get('/manga/:mal_id', controller.getReviewsbyManga);
+router.get('/user/:userId', controller.getReviewsByUser);
 router.delete("/deletereview/:mal_id/:reviewId", authenticate, controller.deleteReview);
-
+router.put("/updatereview/:mal_id/:reviewId",authenticate, controller.updateReview);
 module.exports=router;

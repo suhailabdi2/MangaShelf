@@ -102,7 +102,114 @@ async function deleteReview(req,res){
         session.endSession();
     }
 }
+async function updateReview(req, res) {
+    const { mal_id, reviewId } = req.params;
+    const { rating, comment, spoilerTagged } = req.body;
+    const userId = req.user?.userId || req.user?._id;
+    
+    if (!userId) {
+        return res.status(401).json({ error: "No user id" });
+    }
+    
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+        ? new mongoose.Types.ObjectId(userId) 
+        : userId;
+    
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
+    try {
+        const manga = await Manga.findOne({ mal_id }).session(session);
+        
+        if (!manga) {
+            await session.abortTransaction();
+            return res.status(404).json({ error: "Manga not found" });
+        }
+        
+        const review = await Review.findOne({ 
+            _id: reviewId, 
+            mangaId: manga._id 
+        }).session(session);
+        
+        if (!review) {
+            await session.abortTransaction();
+            return res.status(404).json({ error: "Review not found" });
+        }
+        
+        // Only the owner can update their review
+        if (review.userId.toString() !== userObjectId.toString()) {
+            await session.abortTransaction();
+            return res.status(403).json({ error: "Not authorized to update this review" });
+        }
+        
+        // Store old rating before updating
+        const oldRating = Number(review.rating);
+        
+        // Update review fields
+        if (rating !== undefined) review.rating = Number(rating);
+        if (comment !== undefined) review.comment = comment;
+        if (spoilerTagged !== undefined) review.spoilerTagged = Boolean(spoilerTagged);
+        
+        await review.save({ session });
+        
+        // Recalculate manga score if rating changed
+        if (rating !== undefined && rating !== oldRating) {
+            const newRating = Number(rating);
+            // Remove old rating and add new rating to calculate new average
+            const totalScore = (manga.score * manga.reviewCount) - oldRating + newRating;
+            manga.score = totalScore / manga.reviewCount;
+            await manga.save({ session });
+        }
+        
+        await session.commitTransaction();
+        return res.status(200).json({ 
+            message: "Review updated successfully",
+            review 
+        });
+        
+    } catch (error) {
+        await session.abortTransaction();
+        console.error("Update review error:", error);
+        return res.status(500).json({ error: "Failed to update review" });
+    } finally {
+        session.endSession();
+    }
+}
+async function getReviewsbyManga(req,res){
+    try{
+        const {mal_id}= req.params;
+        const manga = await Manga.findOne({mal_id});
+        if(!manga){
+            return res.status(404).json({message:"No manga found"})
+        }
+        const reviews = await Review.find({mangaId:manga._id}).populate('userId','userName').sort({createdAt:-1});
+        res.status(200).json({
+            reviews,
+            totalReviews:reviews.length,
+            averageScore:manga.score
+        });
+    }catch(error){
+        console.error("Getting manga error: ",error);
+        res.status(500).json({message: error.message});
+    }
+}
+async function getReviewsByUser(req,res){
+    try{
+        const {userId}= req.params;
+        const reviews = await Review.find({userId}).populate('mangaId',"mangaTitle coverImage score").sort({createdAt:-1});
+        res.status(200).json({
+            reviews,
+            totalReviews:reviews.length,
+        }); 
+    }catch(error){
+        console.error("Getting user reviews", error);
+        res.status(500).json({message:error.message});
+    }
+}
 module.exports = {
     createReview,
-    deleteReview
-}
+    deleteReview,
+    updateReview,
+    getReviewsByUser,
+    getReviewsbyManga
+};
