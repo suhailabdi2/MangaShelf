@@ -15,6 +15,7 @@ import {
   ReviewsResponse 
 } from '@/lib/api';
 import UserMenu from '@/components/UserMenu';
+import ReadingStatusSelector from '@/components/ReadingStatusSelector';
 
 export default function MangaDetailPage() {
   const params = useParams();
@@ -196,6 +197,13 @@ export default function MangaDetailPage() {
                     <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                       {manga.synopsis}
                     </p>
+                  </div>
+                )}
+
+                {/* Reading Status Selector */}
+                {user && (
+                  <div className="border-t-2 border-black pt-6">
+                    <ReadingStatusSelector malId={id} />
                   </div>
                 )}
               </div>

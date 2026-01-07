@@ -196,7 +196,7 @@ async function getReviewsbyManga(req,res){
 async function getReviewsByUser(req,res){
     try{
         const {userId}= req.params;
-        const reviews = await Review.find({userId}).populate('mangaId',"mangaTitle coverImage score").sort({createdAt:-1});
+        const reviews = await Review.find({userId}).populate('mangaId',"mangaTitle coverImage score mal_id").sort({createdAt:-1});
         res.status(200).json({
             reviews,
             totalReviews:reviews.length,

@@ -207,3 +207,126 @@ export async function deleteReview(malId: number, reviewId: string): Promise<{ m
   return payload;
 }
 
+export interface UserReview {
+  _id: string;
+  userId: string;
+  mangaId: {
+    _id: string;
+    mangaTitle: string;
+    coverImage: string;
+    score: number;
+    mal_id: string | number;
+  };
+  rating: number;
+  comment: string;
+  spoilerTagged: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserReviewsResponse {
+  reviews: UserReview[];
+  totalReviews: number;
+}
+
+export async function getUserReviews(userId: string): Promise<UserReviewsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/review/user/${userId}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch user reviews');
+  }
+  return response.json();
+}
+
+// Reading Status types and functions
+export type ReadingStatus = 'plan_to_read' | 'reading' | 'completed' | 'on_hold' | 'dropped' | null;
+
+export interface MangaWithStatus {
+  _id: string;
+  status: ReadingStatus;
+  updatedAt: string;
+  manga: {
+    _id: string;
+    mal_id: string;
+    mangaTitle: string;
+    coverImage: string;
+    score: number;
+  };
+}
+
+export interface UserMangaResponse {
+  manga: MangaWithStatus[];
+  total: number;
+}
+
+export async function setReadingStatus(malId: number, status: ReadingStatus): Promise<{ message: string }> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('You must be logged in to set reading status');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/status/${malId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to set reading status');
+  }
+  return payload;
+}
+
+export async function getReadingStatus(malId: number): Promise<{ status: ReadingStatus }> {
+  const token = getAuthToken();
+  if (!token) {
+    return { status: null };
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/status/manga/${malId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    return { status: null };
+  }
+  return response.json();
+}
+
+export async function getUserMangaByStatus(userId: string, status?: string): Promise<UserMangaResponse> {
+  const url = status && status !== 'all'
+    ? `${API_BASE_URL}/api/status/user/${userId}/${status}`
+    : `${API_BASE_URL}/api/status/user/${userId}`;
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Failed to fetch user manga');
+  }
+  return response.json();
+}
+
+export async function removeReadingStatus(malId: number): Promise<{ message: string }> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('You must be logged in to remove reading status');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/status/${malId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to remove reading status');
+  }
+  return payload;
+}
+

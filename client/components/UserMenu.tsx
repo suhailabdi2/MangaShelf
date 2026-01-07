@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import AuthModal from './AuthModal';
 
 export default function UserMenu() {
@@ -89,17 +90,31 @@ export default function UserMenu() {
                 onClick={() => setShowMenu(false)}
               />
               <div className="absolute right-0 mt-2 w-48 bg-white border-2 border-black rounded-lg shadow-lg z-20">
-                <div className="p-2">
-                  <div className="px-3 py-2 text-sm text-gray-600 border-b border-gray-200">
-                    {user.userEmail}
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
-                  >
-                    Logout
-                  </button>
+              <div className="p-2">
+                <div className="px-3 py-2 text-sm text-gray-600 border-b border-gray-200">
+                  {user.userEmail}
                 </div>
+                <Link
+                  href="/my-reviews"
+                  className="block w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-100 rounded transition-colors"
+                  onClick={() => setShowMenu(false)}
+                >
+                  My Reviews
+                </Link>
+                <Link
+                  href="/my-library"
+                  className="block w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-100 rounded transition-colors"
+                  onClick={() => setShowMenu(false)}
+                >
+                  My Library
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
               </div>
             </>
           )}

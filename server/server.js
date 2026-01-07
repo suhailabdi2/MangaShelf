@@ -9,6 +9,7 @@ const connectDB = require("./config/db");
 const mangaRoutes = require("./routes/mangaRoutes");
 const userRoutes = require("./routes/userRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const readingStatusRoutes = require("./routes/readingStatusRoutes");
 
 connectDB();
 
@@ -26,6 +27,7 @@ app.use(
 app.use("/api/users", userRoutes);
 app.use("/api/manga", mangaRoutes);
 app.use("/api/review", reviewRoutes);
+app.use("/api/status", readingStatusRoutes);
 
 app.get("/", (req, res) => {
   console.log("Server works");
