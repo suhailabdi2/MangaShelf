@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getUserReviews, UserReview, UserReviewsResponse, deleteReview } from '@/lib/api';
 import UserMenu from '@/components/UserMenu';
+import { useToast } from '@/contexts/ToastContext';
 
 export default function MyReviewsPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function MyReviewsPage() {
   const [reviews, setReviews] = useState<UserReviewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -52,8 +54,9 @@ export default function MyReviewsPage() {
       if (user) {
         fetchReviews(user.id);
       }
+      showToast('Review deleted successfully', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to delete review');
+      showToast(err.message || 'Failed to delete review', 'error');
     }
   };
 

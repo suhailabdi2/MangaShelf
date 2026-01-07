@@ -39,6 +39,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
           window.dispatchEvent(new Event('userUpdated'));
           setTimeout(() => {
             onClose();
+            window.location.reload(); // Reload to update profile picture in menu
           }, 800);
         }
       } else {

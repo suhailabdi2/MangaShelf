@@ -43,6 +43,7 @@ export interface AuthResponse {
     id: string;
     userName: string;
     userEmail: string;
+    profilePicture?: string;
   };
 }
 
@@ -116,6 +117,10 @@ export interface ReviewsResponse {
   reviews: Review[];
   totalReviews: number;
   averageScore: number;
+  currentPage?: number;
+  totalPages?: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
 }
 
 export interface CreateReviewData {
@@ -131,8 +136,18 @@ function getAuthToken(): string | null {
 }
 
 // Review API functions
-export async function getMangaReviews(malId: number): Promise<ReviewsResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/review/manga/${malId}`);
+export async function getMangaReviews(
+  malId: number, 
+  page: number = 1, 
+  limit: number = 10,
+  sortBy: 'newest' | 'oldest' | 'highest' | 'lowest' = 'newest'
+): Promise<ReviewsResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    sortBy: sortBy
+  });
+  const response = await fetch(`${API_BASE_URL}/api/review/manga/${malId}?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch reviews');
   }
@@ -328,5 +343,49 @@ export async function removeReadingStatus(malId: number): Promise<{ message: str
     throw new Error(payload.error || 'Failed to remove reading status');
   }
   return payload;
+}
+
+// Profile Picture functions
+export interface ProfilePictureResponse {
+  message: string;
+  profilePicture: string;
+  user?: {
+    id: string;
+    userName: string;
+    userEmail: string;
+    profilePicture: string;
+  };
+}
+
+export async function uploadProfilePicture(file: File): Promise<ProfilePictureResponse> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('You must be logged in to upload a profile picture');
+  }
+
+  const formData = new FormData();
+  formData.append('profilePicture', file);
+
+  const response = await fetch(`${API_BASE_URL}/api/users/upload-profile-picture`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to upload profile picture');
+  }
+  return payload;
+}
+
+export async function getProfilePicture(userId: string): Promise<{ profilePicture: string | null; userName: string; userEmail: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/users/get-profile-picture/${userId}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch profile picture');
+  }
+  return response.json();
 }
 

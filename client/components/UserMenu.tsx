@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import AuthModal from './AuthModal';
 
 export default function UserMenu() {
@@ -73,6 +74,21 @@ export default function UserMenu() {
             onClick={() => setShowMenu(!showMenu)}
             className="flex items-center gap-2 px-4 py-2 border-2 border-black rounded-lg hover:bg-black hover:text-white transition-colors"
           >
+            {user.profilePicture ? (
+              <Image
+                src={user.profilePicture}
+                alt={user.userName}
+                width={24}
+                height={24}
+                className="rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-white">
+                  {user.userName?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+            )}
             <span className="font-semibold">{user.userName}</span>
             <svg
               className={`w-4 h-4 transition-transform ${showMenu ? 'rotate-180' : ''}`}
@@ -107,6 +123,13 @@ export default function UserMenu() {
                   onClick={() => setShowMenu(false)}
                 >
                   My Library
+                </Link>
+                <Link
+                  href={`/profile/${user.id}`}
+                  className="block w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-100 rounded transition-colors"
+                  onClick={() => setShowMenu(false)}
+                >
+                  My Profile
                 </Link>
                 <button
                   onClick={handleLogout}

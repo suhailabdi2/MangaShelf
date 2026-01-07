@@ -178,15 +178,53 @@ async function updateReview(req, res) {
 async function getReviewsbyManga(req,res){
     try{
         const {mal_id}= req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const sortBy = req.query.sortBy || 'newest'; // newest, oldest, highest, lowest
+        
         const manga = await Manga.findOne({mal_id});
         if(!manga){
             return res.status(404).json({message:"No manga found"})
         }
-        const reviews = await Review.find({mangaId:manga._id}).populate('userId','userName').sort({createdAt:-1});
+
+        // Determine sort order
+        let sortOption = {};
+        switch(sortBy) {
+            case 'newest':
+                sortOption = { createdAt: -1 };
+                break;
+            case 'oldest':
+                sortOption = { createdAt: 1 };
+                break;
+            case 'highest':
+                sortOption = { rating: -1, createdAt: -1 };
+                break;
+            case 'lowest':
+                sortOption = { rating: 1, createdAt: -1 };
+                break;
+            default:
+                sortOption = { createdAt: -1 };
+        }
+
+        const skip = (page - 1) * limit;
+        
+        const reviews = await Review.find({mangaId:manga._id})
+            .populate('userId','userName')
+            .sort(sortOption)
+            .skip(skip)
+            .limit(limit);
+        
+        const totalReviews = await Review.countDocuments({mangaId:manga._id});
+        const totalPages = Math.ceil(totalReviews / limit);
+
         res.status(200).json({
             reviews,
-            totalReviews:reviews.length,
-            averageScore:manga.score
+            totalReviews,
+            averageScore:manga.score,
+            currentPage: page,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1
         });
     }catch(error){
         console.error("Getting manga error: ",error);

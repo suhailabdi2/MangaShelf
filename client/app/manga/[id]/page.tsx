@@ -16,6 +16,7 @@ import {
 } from '@/lib/api';
 import UserMenu from '@/components/UserMenu';
 import ReadingStatusSelector from '@/components/ReadingStatusSelector';
+import { useToast } from '@/contexts/ToastContext';
 
 export default function MangaDetailPage() {
   const params = useParams();
@@ -28,6 +29,10 @@ export default function MangaDetailPage() {
   const [user, setUser] = useState<any>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
+  const reviewsPerPage = 10;
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -41,6 +46,12 @@ export default function MangaDetailPage() {
       fetchReviews();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchReviews();
+    }
+  }, [currentPage, sortBy]);
 
   const fetchManga = async () => {
     setLoading(true);
@@ -58,7 +69,7 @@ export default function MangaDetailPage() {
 
   const fetchReviews = async () => {
     try {
-      const data = await getMangaReviews(id);
+      const data = await getMangaReviews(id, currentPage, reviewsPerPage, sortBy);
       setReviews(data);
     } catch (err) {
       console.error('Failed to load reviews:', err);
@@ -69,10 +80,12 @@ export default function MangaDetailPage() {
     try {
       await createReview(id, reviewData);
       setShowReviewForm(false);
+      setCurrentPage(1); // Reset to first page after creating review
       fetchReviews();
       fetchManga(); // Refresh manga to get updated score
+      showToast('Review created successfully!', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to create review');
+      showToast(err.message || 'Failed to create review', 'error');
     }
   };
 
@@ -82,8 +95,9 @@ export default function MangaDetailPage() {
       setEditingReview(null);
       fetchReviews();
       fetchManga(); // Refresh manga to get updated score
+      showToast('Review updated successfully!', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to update review');
+      showToast(err.message || 'Failed to update review', 'error');
     }
   };
 
@@ -91,11 +105,22 @@ export default function MangaDetailPage() {
     if (!confirm('Are you sure you want to delete this review?')) return;
     try {
       await deleteReview(id, reviewId);
-      fetchReviews();
+      // If we're on a page that might become empty, go back a page
+      if (reviews && reviews.reviews.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      } else {
+        fetchReviews();
+      }
       fetchManga(); // Refresh manga to get updated score
+      showToast('Review deleted successfully', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to delete review');
+      showToast(err.message || 'Failed to delete review', 'error');
     }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -211,18 +236,31 @@ export default function MangaDetailPage() {
 
             {/* Reviews Section */}
             <div className="mt-12 border-t-2 border-black pt-8">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <h2 className="text-3xl font-bold">
                   Reviews {reviews && `(${reviews.totalReviews})`}
                 </h2>
-                {user && !showReviewForm && !editingReview && (
-                  <button
-                    onClick={() => setShowReviewForm(true)}
-                    className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg border-2 border-black hover:bg-red-700 transition-colors"
+                <div className="flex items-center gap-4">
+                  {/* Sort Dropdown */}
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                    className="px-4 py-2 border-2 border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 bg-white"
                   >
-                    Write a Review
-                  </button>
-                )}
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="highest">Highest Rating</option>
+                    <option value="lowest">Lowest Rating</option>
+                  </select>
+                  {user && !showReviewForm && !editingReview && (
+                    <button
+                      onClick={() => setShowReviewForm(true)}
+                      className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg border-2 border-black hover:bg-red-700 transition-colors"
+                    >
+                      Write a Review
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Review Form */}
@@ -241,17 +279,76 @@ export default function MangaDetailPage() {
 
               {/* Reviews List */}
               {reviews && reviews.reviews.length > 0 ? (
-                <div className="space-y-6 mt-8">
-                  {reviews.reviews.map((review) => (
-                    <ReviewCard
-                      key={review._id}
-                      review={review}
-                      currentUserId={user?.id}
-                      onEdit={() => setEditingReview(review)}
-                      onDelete={() => handleDeleteReview(review._id)}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="space-y-6 mt-8">
+                    {reviews.reviews.map((review) => (
+                      <ReviewCard
+                        key={review._id}
+                        review={review}
+                        currentUserId={user?.id}
+                        onEdit={() => setEditingReview(review)}
+                        onDelete={() => handleDeleteReview(review._id)}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Pagination */}
+                  {reviews.totalPages && reviews.totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-8">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={!reviews.hasPrevPage}
+                        className="px-4 py-2 border-2 border-black rounded-lg hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, reviews.totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (reviews.totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= reviews.totalPages - 2) {
+                            pageNum = reviews.totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => handlePageChange(pageNum)}
+                              className={`px-3 py-2 border-2 border-black rounded-lg transition-colors ${
+                                currentPage === pageNum
+                                  ? 'bg-red-600 text-white'
+                                  : 'bg-white text-black hover:bg-black hover:text-white'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={!reviews.hasNextPage}
+                        className="px-4 py-2 border-2 border-black rounded-lg hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Page Info */}
+                  {reviews.totalPages && reviews.totalPages > 1 && (
+                    <p className="text-center text-gray-600 text-sm mt-4">
+                      Page {reviews.currentPage} of {reviews.totalPages}
+                    </p>
+                  )}
+                </>
               ) : (
                 <p className="text-gray-600 text-center py-8">No reviews yet. Be the first to review!</p>
               )}
@@ -277,11 +374,12 @@ function ReviewForm({
   const [comment, setComment] = useState(review?.comment || '');
   const [spoilerTagged, setSpoilerTagged] = useState(review?.spoilerTagged || false);
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!comment.trim()) {
-      alert('Please enter a comment');
+      showToast('Please enter a comment', 'error');
       return;
     }
     setLoading(true);

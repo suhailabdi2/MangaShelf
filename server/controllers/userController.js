@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const { cloudinary, upload } = require("../config/cloudinary");
 async function userSignUp(req,res){
     try{
             const  {userName,userEmail,password} = req.body;
@@ -53,10 +54,46 @@ async function userLogin(req,res){
         user:{
             id:user._id,
             userName:user.userName,
-            userEmail:user.userEmail
+            userEmail:user.userEmail,
+            profilePicture:user.profilePicture
         }
     });
 }
+async function uploadProfilePicture(req,res){
+    try{
+        const {userId} = req.user;
+        const user = await User.findById(userId);
+        if(!user){
+            return res.status(404).json({error:"User not found"});
+        }
+        if(user.profilePicture){
+            await cloudinary.uploader.destroy(user.profilePicture);
+        }
+        const result = await cloudinary.uploader.upload(req.file.path);
+        user.profilePicture = result.secure_url;
+        await user.save();
+        return res.status(200).json({
+            message:"Profile picture uploaded",
+            profilePicture:user.profilePicture
+        });
+    }catch(error){
+        return res.status(500).json({error:error.message});
+    }
+};
+async function getProfilePicture(req,res){
+    try{
+        const {userId} = req.params;
+        const user = await User.findById(userId);
+        if(!user){
+            return res.status(404).json({error:"User not found"});
+        }
+        return res.status(200).json({
+            profilePicture:user.profilePicture
+        });
+    }catch(error){
+        return res.status(500).json({error:error.message});
+    }
+};
 module.exports={
-    userSignUp,userLogin
+    userSignUp,userLogin,uploadProfilePicture,getProfilePicture
 };

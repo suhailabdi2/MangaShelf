@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getReadingStatus, setReadingStatus, removeReadingStatus, ReadingStatus } from '@/lib/api';
+import { useToast } from '@/contexts/ToastContext';
 
 interface ReadingStatusSelectorProps {
   malId: number;
@@ -20,6 +21,7 @@ export default function ReadingStatusSelector({ malId, onStatusChange }: Reading
   const [currentStatus, setCurrentStatus] = useState<ReadingStatus>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchStatus();
@@ -45,16 +47,25 @@ export default function ReadingStatusSelector({ malId, onStatusChange }: Reading
         // Remove status
         await removeReadingStatus(malId);
         setCurrentStatus(null);
+        showToast('Reading status removed', 'success');
       } else {
         // Set new status
         await setReadingStatus(malId, status);
         setCurrentStatus(status);
+        const statusLabels: Record<string, string> = {
+          plan_to_read: 'Plan to Read',
+          reading: 'Reading',
+          completed: 'Completed',
+          on_hold: 'On Hold',
+          dropped: 'Dropped'
+        };
+        showToast(`Status set to ${statusLabels[status]}`, 'success');
       }
       if (onStatusChange) {
         onStatusChange();
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to update reading status');
+      showToast(err.message || 'Failed to update reading status', 'error');
     } finally {
       setSaving(false);
     }
