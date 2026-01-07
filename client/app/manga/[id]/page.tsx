@@ -4,19 +4,40 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { fetchMangaById, MangaDetail } from '@/lib/api';
+import { 
+  fetchMangaById, 
+  MangaDetail, 
+  getMangaReviews, 
+  createReview, 
+  updateReview, 
+  deleteReview,
+  Review,
+  ReviewsResponse 
+} from '@/lib/api';
+import UserMenu from '@/components/UserMenu';
 
 export default function MangaDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
   const [manga, setManga] = useState<MangaDetail | null>(null);
+  const [reviews, setReviews] = useState<ReviewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        setUser(JSON.parse(userStr));
+      }
+    }
     if (id) {
       fetchManga();
+      fetchReviews();
     }
   }, [id]);
 
@@ -34,6 +55,48 @@ export default function MangaDetailPage() {
     }
   };
 
+  const fetchReviews = async () => {
+    try {
+      const data = await getMangaReviews(id);
+      setReviews(data);
+    } catch (err) {
+      console.error('Failed to load reviews:', err);
+    }
+  };
+
+  const handleCreateReview = async (reviewData: { rating: number; comment: string; spoilerTagged: boolean }) => {
+    try {
+      await createReview(id, reviewData);
+      setShowReviewForm(false);
+      fetchReviews();
+      fetchManga(); // Refresh manga to get updated score
+    } catch (err: any) {
+      alert(err.message || 'Failed to create review');
+    }
+  };
+
+  const handleUpdateReview = async (reviewId: string, reviewData: { rating: number; comment: string; spoilerTagged: boolean }) => {
+    try {
+      await updateReview(id, reviewId, reviewData);
+      setEditingReview(null);
+      fetchReviews();
+      fetchManga(); // Refresh manga to get updated score
+    } catch (err: any) {
+      alert(err.message || 'Failed to update review');
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('Are you sure you want to delete this review?')) return;
+    try {
+      await deleteReview(id, reviewId);
+      fetchReviews();
+      fetchManga(); // Refresh manga to get updated score
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete review');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -43,12 +106,15 @@ export default function MangaDetailPage() {
             <Link href="/" className="text-2xl font-bold text-black hover:text-red-600 transition-colors">
               Manga<span className="text-red-600">Shelf</span>
             </Link>
-            <button
-              onClick={() => router.back()}
-              className="px-4 py-2 border-2 border-black rounded-lg hover:bg-black hover:text-white transition-colors"
-            >
-              Back
-            </button>
+            <div className="flex items-center gap-4">
+              <UserMenu />
+              <button
+                onClick={() => router.back()}
+                className="px-4 py-2 border-2 border-black rounded-lg hover:bg-black hover:text-white transition-colors"
+              >
+                Back
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -134,9 +200,201 @@ export default function MangaDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* Reviews Section */}
+            <div className="mt-12 border-t-2 border-black pt-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold">
+                  Reviews {reviews && `(${reviews.totalReviews})`}
+                </h2>
+                {user && !showReviewForm && !editingReview && (
+                  <button
+                    onClick={() => setShowReviewForm(true)}
+                    className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg border-2 border-black hover:bg-red-700 transition-colors"
+                  >
+                    Write a Review
+                  </button>
+                )}
+              </div>
+
+              {/* Review Form */}
+              {(showReviewForm || editingReview) && (
+                <ReviewForm
+                  review={editingReview}
+                  onSubmit={editingReview 
+                    ? (data) => handleUpdateReview(editingReview._id, data)
+                    : handleCreateReview}
+                  onCancel={() => {
+                    setShowReviewForm(false);
+                    setEditingReview(null);
+                  }}
+                />
+              )}
+
+              {/* Reviews List */}
+              {reviews && reviews.reviews.length > 0 ? (
+                <div className="space-y-6 mt-8">
+                  {reviews.reviews.map((review) => (
+                    <ReviewCard
+                      key={review._id}
+                      review={review}
+                      currentUserId={user?.id}
+                      onEdit={() => setEditingReview(review)}
+                      onDelete={() => handleDeleteReview(review._id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-center py-8">No reviews yet. Be the first to review!</p>
+              )}
+            </div>
           </div>
         ) : null}
       </main>
+    </div>
+  );
+}
+
+// Review Form Component
+function ReviewForm({ 
+  review, 
+  onSubmit, 
+  onCancel 
+}: { 
+  review: Review | null; 
+  onSubmit: (data: { rating: number; comment: string; spoilerTagged: boolean }) => void;
+  onCancel: () => void;
+}) {
+  const [rating, setRating] = useState(review?.rating || 5);
+  const [comment, setComment] = useState(review?.comment || '');
+  const [spoilerTagged, setSpoilerTagged] = useState(review?.spoilerTagged || false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!comment.trim()) {
+      alert('Please enter a comment');
+      return;
+    }
+    setLoading(true);
+    try {
+      await onSubmit({ rating, comment, spoilerTagged });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="border-2 border-black rounded-lg p-6 mb-6">
+      <h3 className="text-xl font-bold mb-4">{review ? 'Edit Review' : 'Write a Review'}</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-black mb-2">Rating (1-10)</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={rating}
+              onChange={(e) => setRating(Number(e.target.value))}
+              className="flex-1"
+            />
+            <span className="text-xl font-bold text-red-600 w-12 text-center">{rating}</span>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-black mb-2">Comment</label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            required
+            rows={5}
+            className="w-full px-4 py-3 border-2 border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+            placeholder="Share your thoughts about this manga..."
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="spoiler"
+            checked={spoilerTagged}
+            onChange={(e) => setSpoilerTagged(e.target.checked)}
+            className="w-4 h-4"
+          />
+          <label htmlFor="spoiler" className="text-sm text-gray-700">
+            This review contains spoilers
+          </label>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg border-2 border-black hover:bg-red-700 transition-colors disabled:opacity-70"
+          >
+            {loading ? 'Submitting...' : review ? 'Update Review' : 'Submit Review'}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-6 py-2 border-2 border-black rounded-lg hover:bg-black hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// Review Card Component
+function ReviewCard({ 
+  review, 
+  currentUserId, 
+  onEdit, 
+  onDelete 
+}: { 
+  review: Review; 
+  currentUserId?: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const isOwner = currentUserId && review.userId._id === currentUserId;
+  const date = new Date(review.createdAt).toLocaleDateString();
+
+  return (
+    <div className="border-2 border-black rounded-lg p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-bold text-black">{review.userId.userName}</span>
+            <span className="text-red-600 font-bold">{review.rating}/10</span>
+            {review.spoilerTagged && (
+              <span className="px-2 py-1 bg-red-600 text-white text-xs rounded">Spoiler</span>
+            )}
+          </div>
+          <p className="text-sm text-gray-600">{date}</p>
+        </div>
+        {isOwner && (
+          <div className="flex gap-2">
+            <button
+              onClick={onEdit}
+              className="px-3 py-1 text-sm border border-black rounded hover:bg-black hover:text-white transition-colors"
+            >
+              Edit
+            </button>
+            <button
+              onClick={onDelete}
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+      <p className="text-gray-700 whitespace-pre-wrap">{review.comment}</p>
     </div>
   );
 }

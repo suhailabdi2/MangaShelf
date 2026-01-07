@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import UserMenu from '@/components/UserMenu';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,9 +21,12 @@ export default function Home() {
       {/* Header */}
       <header className="border-b-2 border-black">
         <div className="container mx-auto px-4 py-4">
-          <Link href="/" className="text-2xl font-bold text-black hover:text-red-600 transition-colors">
-            Manga<span className="text-red-600">Shelf</span>
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link href="/" className="text-2xl font-bold text-black hover:text-red-600 transition-colors">
+              Manga<span className="text-red-600">Shelf</span>
+            </Link>
+            <UserMenu />
+          </div>
         </div>
       </header>
 

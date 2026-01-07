@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { searchManga, MangaSearchResult } from '@/lib/api';
 import Image from 'next/image';
+import UserMenu from '@/components/UserMenu';
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -49,26 +50,27 @@ export default function SearchPage() {
       {/* Header */}
       <header className="border-b-2 border-black">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <Link href="/" className="text-2xl font-bold text-black hover:text-red-600 transition-colors">
               Manga<span className="text-red-600">Shelf</span>
             </Link>
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search..."
-                className="px-4 py-2 border-2 border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors border-2 border-black"
-              >
-                Search
-              </button>
-            </form>
+            <UserMenu />
           </div>
+          <form onSubmit={handleSearch} className="flex gap-2 max-w-2xl">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search..."
+              className="flex-1 px-4 py-2 border-2 border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+            />
+            <button
+              type="submit"
+              className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors border-2 border-black"
+            >
+              Search
+            </button>
+          </form>
         </div>
       </header>
 
@@ -102,14 +104,14 @@ export default function SearchPage() {
             <h2 className="text-3xl font-bold mb-6">
               Search Results for &quot;{query}&quot;
             </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {results.map((manga) => (
                 <Link
                   key={manga.mal_id}
                   href={`/manga/${manga.mal_id}`}
                   className="group border-2 border-black rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
                 >
-                  <div className="relative h-64 bg-gray-100">
+                  <div className="relative aspect-[3/4] bg-gray-100">
                     {manga.images?.jpg?.image_url ? (
                       <Image
                         src={manga.images.jpg.image_url}
@@ -118,23 +120,20 @@ export default function SearchPage() {
                         className="object-cover group-hover:scale-105 transition-transform"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
                         No Image
                       </div>
                     )}
                   </div>
-                  <div className="p-4">
-                    <h3 className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-red-600 transition-colors">
+                  <div className="p-2">
+                    <h3 className="text-sm font-bold mb-1 line-clamp-2 group-hover:text-red-600 transition-colors">
                       {manga.title_english || manga.title}
                     </h3>
                     {manga.score && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-red-600 font-bold">{manga.score}</span>
-                        <span className="text-gray-600">/ 10</span>
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-red-600 font-bold text-xs">{manga.score}</span>
+                        <span className="text-gray-600 text-xs">/ 10</span>
                       </div>
-                    )}
-                    {manga.synopsis && (
-                      <p className="text-gray-600 text-sm line-clamp-3">{manga.synopsis}</p>
                     )}
                   </div>
                 </Link>
