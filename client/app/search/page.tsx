@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { searchManga, MangaSearchResult } from '@/lib/api';
 import Image from 'next/image';
 import UserMenu from '@/components/UserMenu';
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get('q') || '';
@@ -143,6 +143,48 @@ export default function SearchPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white">
+        <header className="border-b-2 border-black">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between mb-4">
+              <Link href="/" className="text-2xl font-bold text-black hover:text-red-600 transition-colors">
+                Manga<span className="text-red-600">Shelf</span>
+              </Link>
+              <UserMenu />
+            </div>
+            <form className="flex gap-2 max-w-2xl">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="flex-1 px-4 py-2 border-2 border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                disabled
+              />
+              <button
+                type="button"
+                className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg border-2 border-black"
+                disabled
+              >
+                Search
+              </button>
+            </form>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          <div className="text-center py-16">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        </main>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }
 

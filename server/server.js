@@ -16,10 +16,14 @@ connectDB();
 // Middleware
 app.use(express.json());
 
-// Allow requests from the Next.js dev server
+// Allow requests from the Next.js dev server and Vercel deployments
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: [
+      "http://localhost:3000",
+      /\.vercel\.app$/, // Allow all Vercel deployments
+    ],
+    credentials: true,
   })
 );
 

@@ -304,14 +304,15 @@ export default function MangaDetailPage() {
                       </button>
                       
                       <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, reviews.totalPages) }, (_, i) => {
+                        {Array.from({ length: Math.min(5, reviews.totalPages || 1) }, (_, i) => {
+                          const totalPages = reviews.totalPages || 1;
                           let pageNum;
-                          if (reviews.totalPages <= 5) {
+                          if (totalPages <= 5) {
                             pageNum = i + 1;
                           } else if (currentPage <= 3) {
                             pageNum = i + 1;
-                          } else if (currentPage >= reviews.totalPages - 2) {
-                            pageNum = reviews.totalPages - 4 + i;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
                           } else {
                             pageNum = currentPage - 2 + i;
                           }
@@ -345,7 +346,7 @@ export default function MangaDetailPage() {
                   {/* Page Info */}
                   {reviews.totalPages && reviews.totalPages > 1 && (
                     <p className="text-center text-gray-600 text-sm mt-4">
-                      Page {reviews.currentPage} of {reviews.totalPages}
+                      Page {reviews.currentPage || 1} of {reviews.totalPages}
                     </p>
                   )}
                 </>
