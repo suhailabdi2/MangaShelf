@@ -13,7 +13,12 @@ A full-stack social platform for manga enthusiasts to discover, review, and rate
 
 ## 📸 Screenshots
 
-*[Add screenshots of your app here - homepage, search, manga detail page, review form, profile page]*
+<img width="1866" height="961" alt="image" src="https://github.com/user-attachments/assets/fbaf43e8-ea3e-4fa9-b257-0d3202e0fb86" />
+<img width="1866" height="961" alt="image" src="https://github.com/user-attachments/assets/441b615e-c9db-4153-bc4d-8e8b7f75f2d1" />
+<img width="1866" height="961" alt="image" src="https://github.com/user-attachments/assets/2c2a3785-afbf-4e1b-b7c5-24292fc5667e" />
+<img width="1866" height="961" alt="Screenshot from 2026-01-11 12-01-54" src="https://github.com/user-attachments/assets/b9ce5d86-d334-436d-82a2-ae6c1ee826d4" />
+<img width="1866" height="961" alt="image" src="https://github.com/user-attachments/assets/fc00f40f-c3c7-45ec-81b1-b51aba5ae709" />
+
 
 ## ✨ Features
 
