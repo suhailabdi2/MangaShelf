@@ -24,11 +24,10 @@ A full-stack social platform for manga enthusiasts to discover, review, and rate
 
 ### Manga Discovery
 - 🔍 **Smart Search** - Search thousands of manga via MyAnimeList integration
-- 📚 **Detailed Information** - View synopsis, author, genres, chapters, and publication status
 - ⚡ **Intelligent Caching** - 90% reduction in external API calls through local database caching
 
 ### Review System
-- ⭐ **5-Star Ratings** - Rate manga on a 1-5 scale
+- ⭐ **10-Star Ratings** - Rate manga on a 1-5 scale
 - 💬 **Written Reviews** - Share detailed thoughts and opinions
 - 🎯 **Spoiler Tags** - Mark reviews containing spoilers
 - ✏️ **Full CRUD** - Create, read, update, and delete your reviews
