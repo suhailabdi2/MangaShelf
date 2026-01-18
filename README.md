@@ -32,7 +32,7 @@ A full-stack social platform for manga enthusiasts to discover, review, and rate
 - ⚡ **Intelligent Caching** - 90% reduction in external API calls through local database caching
 
 ### Review System
-- ⭐ **10-Star Ratings** - Rate manga on a 1-5 scale
+- ⭐ **10-Star Ratings** - Rate manga on a 1-10 scale
 - 💬 **Written Reviews** - Share detailed thoughts and opinions
 - 🎯 **Spoiler Tags** - Mark reviews containing spoilers
 
