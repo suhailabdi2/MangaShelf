@@ -2,6 +2,7 @@ const Review = require("../models/Review");
 const mongoose = require("mongoose");
 const Manga= require("../models/Manga");
 const User = require("../models/User");
+const Rating = require("../models/Rating");
 async function createReview(req,res) {
     const {rating, comment,spoilerTagged}= req.body;
     const { mal_id } = req.params;
@@ -35,6 +36,11 @@ async function createReview(req,res) {
             spoilerTagged: Boolean(spoilerTagged)
         });
         await review.save({ session });
+        await Rating.findOneAndUpdate(
+            { userId: userObjectId, mangaId: manga._id },
+            { userId: userObjectId, mangaId: manga._id, rating: Number(rating), source: "review" },
+            { upsert: true, session }
+        );
         const newCount = manga.reviewCount + 1;
         const newAverage = ((manga.score * manga.reviewCount) + Number(rating)) / newCount;
         manga.reviewCount = newCount;
@@ -83,6 +89,7 @@ async function deleteReview(req,res){
         }
         const rating = Number(review.rating);
         await review.deleteOne({ session });
+        await Rating.deleteOne({ userId: userObjectId, mangaId: manga._id }).session(session);
         const newCount = Math.max(0, manga.reviewCount - 1);
         if(newCount === 0){
             manga.reviewCount = 0;
@@ -151,6 +158,13 @@ async function updateReview(req, res) {
         if (spoilerTagged !== undefined) review.spoilerTagged = Boolean(spoilerTagged);
         
         await review.save({ session });
+        if (rating !== undefined) {
+            await Rating.findOneAndUpdate(
+                { userId: userObjectId, mangaId: manga._id },
+                { userId: userObjectId, mangaId: manga._id, rating: Number(rating), source: "review" },
+                { upsert: true, session }
+            );
+        }
         
         // Recalculate manga score if rating changed
         if (rating !== undefined && rating !== oldRating) {

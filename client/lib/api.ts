@@ -26,6 +26,10 @@ export interface MangaDetail {
   synopsis: string;
   score: number;
   author: string;
+  genres?: string[];
+  tags?: string[];
+  themes?: string[];
+  demographics?: string[];
 }
 
 export interface SearchResponse {
@@ -273,7 +277,11 @@ export interface UserMangaResponse {
   total: number;
 }
 
-export async function setReadingStatus(malId: number, status: ReadingStatus): Promise<{ message: string }> {
+export async function setReadingStatus(
+  malId: number,
+  status: ReadingStatus,
+  isFavorite?: boolean,
+): Promise<{ message: string }> {
   const token = getAuthToken();
   if (!token) {
     throw new Error('You must be logged in to set reading status');
@@ -285,7 +293,7 @@ export async function setReadingStatus(malId: number, status: ReadingStatus): Pr
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, isFavorite }),
   });
 
   const payload = await response.json();
@@ -295,10 +303,71 @@ export async function setReadingStatus(malId: number, status: ReadingStatus): Pr
   return payload;
 }
 
-export async function getReadingStatus(malId: number): Promise<{ status: ReadingStatus }> {
+export interface RecommendationItem {
+  _id: string;
+  mal_id: string | number;
+  mangaTitle: string;
+  coverImage: string;
+  synopsis?: string;
+  score?: number;
+  genres?: string[];
+}
+
+export interface RecommendationPayload {
+  manga: RecommendationItem[];
+  scores: Array<{ score: number; confidence: number }>;
+  reasoning: string[];
+}
+
+function authHeaders(): HeadersInit {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function getForYouRecommendations(limit = 10): Promise<RecommendationPayload> {
+  const response = await fetch(`${API_BASE_URL}/api/recommendations/for-you?limit=${limit}`, {
+    headers: {
+      ...authHeaders(),
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch personalized recommendations');
+  }
+  return response.json();
+}
+
+export async function getRecommendations(limit = 10): Promise<RecommendationPayload> {
+  const response = await fetch(`${API_BASE_URL}/api/recommendations?limit=${limit}`, {
+    headers: {
+      ...authHeaders(),
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch recommendations');
+  }
+  return response.json();
+}
+
+export async function getSimilarRecommendations(malId: number, limit = 10): Promise<RecommendationPayload> {
+  const response = await fetch(`${API_BASE_URL}/api/recommendations/similar/${malId}?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch similar recommendations');
+  }
+  return response.json();
+}
+
+export async function getTrendingRecommendations(limit = 10): Promise<RecommendationPayload> {
+  const response = await fetch(`${API_BASE_URL}/api/recommendations/trending?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch trending recommendations');
+  }
+  return response.json();
+}
+
+export async function getReadingStatus(malId: number): Promise<{ status: ReadingStatus; isFavorite?: boolean }> {
   const token = getAuthToken();
   if (!token) {
-    return { status: null };
+    return { status: null, isFavorite: false };
   }
 
   const response = await fetch(`${API_BASE_URL}/api/status/manga/${malId}`, {
@@ -308,7 +377,7 @@ export async function getReadingStatus(malId: number): Promise<{ status: Reading
   });
 
   if (!response.ok) {
-    return { status: null };
+    return { status: null, isFavorite: false };
   }
   return response.json();
 }

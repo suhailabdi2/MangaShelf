@@ -10,6 +10,8 @@ const mangaRoutes = require("./routes/mangaRoutes");
 const userRoutes = require("./routes/userRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const readingStatusRoutes = require("./routes/readingStatusRoutes");
+const recommendationRoutes = require("./routes/recommendationRoutes");
+const { startEmbeddingScheduler } = require("./jobs/embeddingJob");
 
 connectDB();
 
@@ -32,6 +34,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/manga", mangaRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/status", readingStatusRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 app.get("/", (req, res) => {
   console.log("Server works");
@@ -40,4 +43,5 @@ app.get("/", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Listening at port ${PORT}`);
+  startEmbeddingScheduler();
 });

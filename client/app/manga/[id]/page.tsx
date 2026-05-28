@@ -12,7 +12,9 @@ import {
   updateReview, 
   deleteReview,
   Review,
-  ReviewsResponse 
+  ReviewsResponse,
+  getSimilarRecommendations,
+  RecommendationPayload,
 } from '@/lib/api';
 import UserMenu from '@/components/UserMenu';
 import ReadingStatusSelector from '@/components/ReadingStatusSelector';
@@ -31,6 +33,7 @@ export default function MangaDetailPage() {
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
+  const [similarRecommendations, setSimilarRecommendations] = useState<RecommendationPayload | null>(null);
   const reviewsPerPage = 10;
   const { showToast } = useToast();
 
@@ -44,6 +47,7 @@ export default function MangaDetailPage() {
     if (id) {
       fetchManga();
       fetchReviews();
+      fetchSimilarRecommendations();
     }
   }, [id]);
 
@@ -73,6 +77,15 @@ export default function MangaDetailPage() {
       setReviews(data);
     } catch (err) {
       console.error('Failed to load reviews:', err);
+    }
+  };
+
+  const fetchSimilarRecommendations = async () => {
+    try {
+      const data = await getSimilarRecommendations(id, 10);
+      setSimilarRecommendations(data);
+    } catch (err) {
+      console.error('Failed to load similar recommendations:', err);
     }
   };
 
@@ -354,6 +367,31 @@ export default function MangaDetailPage() {
                 <p className="text-gray-600 text-center py-8">No reviews yet. Be the first to review!</p>
               )}
             </div>
+
+            {similarRecommendations && similarRecommendations.manga.length > 0 && (
+              <section className="mt-12 border-t-2 border-black pt-8">
+                <h2 className="text-3xl font-bold mb-4">Because You Read {manga.mangaTitle}</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                  {similarRecommendations.manga.map((item, idx) => (
+                    <Link
+                      key={`${item._id}-${idx}`}
+                      href={`/manga/${item.mal_id}`}
+                      className="border-2 border-black rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                    >
+                      <div className="relative aspect-[3/4] bg-gray-100">
+                        {item.coverImage && (
+                          <Image src={item.coverImage} alt={item.mangaTitle} fill className="object-cover" />
+                        )}
+                      </div>
+                      <div className="p-2">
+                        <h3 className="text-sm font-bold line-clamp-2">{item.mangaTitle}</h3>
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{similarRecommendations.reasoning[idx]}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         ) : null}
       </main>

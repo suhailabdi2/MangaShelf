@@ -1,25 +1,29 @@
-const express = require("express");
 const Manga = require("../models/Manga");
 const axios = require("axios");
 async function fetchManga(req,res){
     try{
         const {mal_id} = req.params;
         console.log(mal_id);
-        const mangaSearch = await Manga.find({mal_id});
-        if(mangaSearch.length> 0){
-            return res.status(200).json(mangaSearch[0]);
+        const mangaSearch = await Manga.findOne({mal_id: String(mal_id)});
+        if(mangaSearch){
+            return res.status(200).json(mangaSearch);
         }
         const response = await axios.get(`https://api.jikan.moe/v4/manga/${mal_id}`);
-        console.log(response);
         const mangaData = response.data.data;
-        console.log(mangaData);
         const manga = await Manga.create({
-            mal_id: mangaData.mal_id,
-            mangaTitle: mangaData.title_english,
+            mal_id: String(mangaData.mal_id),
+            mangaTitle: mangaData.title_english || mangaData.title || "Untitled",
             coverImage: mangaData.images.jpg.image_url,
             synopsis: mangaData.synopsis || "No synopsis available",
             score: mangaData.score || 0,
             author: mangaData.authors[0]?.name || "Unknown",
+            genres: (mangaData.genres || []).map((x) => x.name),
+            tags: (mangaData.explicit_genres || []).map((x) => x.name),
+            themes: (mangaData.themes || []).map((x) => x.name),
+            demographics: (mangaData.demographics || []).map((x) => x.name),
+            popularityRank: mangaData.popularity || 0,
+            members: mangaData.members || 0,
+            favoritesCount: mangaData.favorites || 0,
         });
         return res.status(200).json(manga);
     }catch(error){

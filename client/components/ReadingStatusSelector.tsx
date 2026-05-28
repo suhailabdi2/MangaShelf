@@ -19,6 +19,7 @@ const STATUS_OPTIONS: { value: ReadingStatus; label: string; color: string }[] =
 
 export default function ReadingStatusSelector({ malId, onStatusChange }: ReadingStatusSelectorProps) {
   const [currentStatus, setCurrentStatus] = useState<ReadingStatus>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
@@ -31,6 +32,7 @@ export default function ReadingStatusSelector({ malId, onStatusChange }: Reading
     try {
       const data = await getReadingStatus(malId);
       setCurrentStatus(data.status);
+      setIsFavorite(Boolean(data.isFavorite));
     } catch (err) {
       console.error('Failed to fetch reading status:', err);
     } finally {
@@ -47,10 +49,11 @@ export default function ReadingStatusSelector({ malId, onStatusChange }: Reading
         // Remove status
         await removeReadingStatus(malId);
         setCurrentStatus(null);
+        setIsFavorite(false);
         showToast('Reading status removed', 'success');
       } else {
         // Set new status
-        await setReadingStatus(malId, status);
+        await setReadingStatus(malId, status, isFavorite);
         setCurrentStatus(status);
         const statusLabels: Record<string, string> = {
           plan_to_read: 'Plan to Read',
@@ -71,6 +74,21 @@ export default function ReadingStatusSelector({ malId, onStatusChange }: Reading
     }
   };
 
+  const toggleFavorite = async () => {
+    if (!currentStatus || saving) return;
+    setSaving(true);
+    try {
+      const nextFavorite = !isFavorite;
+      await setReadingStatus(malId, currentStatus, nextFavorite);
+      setIsFavorite(nextFavorite);
+      showToast(nextFavorite ? 'Added to favorites' : 'Removed from favorites', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update favorite', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="border-2 border-black rounded-lg p-4">
@@ -82,6 +100,15 @@ export default function ReadingStatusSelector({ malId, onStatusChange }: Reading
   return (
     <div className="border-2 border-black rounded-lg p-4">
       <h3 className="text-lg font-bold mb-3">Reading Status</h3>
+      <button
+        onClick={toggleFavorite}
+        disabled={!currentStatus || saving}
+        className={`mb-3 w-full px-4 py-2 rounded-lg border-2 border-black font-semibold transition-colors ${
+          isFavorite ? 'bg-red-600 text-white' : 'bg-white text-black hover:bg-gray-100'
+        } disabled:opacity-50`}
+      >
+        {isFavorite ? '★ Favorite' : '☆ Mark as Favorite'}
+      </button>
       <div className="space-y-2">
         {STATUS_OPTIONS.map((option) => {
           const isSelected = currentStatus === option.value;

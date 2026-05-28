@@ -1,11 +1,12 @@
 const ReadingStatus = require("../models/ReadingStatus");
 const Manga = require("../models/Manga");
 const mongoose = require("mongoose");
+const { UserMangaLog } = require("../models/UserMangaLog");
 
 async function setReadingStatus(req, res) {
     try {
         const { mal_id } = req.params;
-        const { status } = req.body;
+        const { status, isFavorite } = req.body;
         const userId = req.user?.userId || req.user?._id;
 
         if (!userId) {
@@ -44,6 +45,19 @@ async function setReadingStatus(req, res) {
                 status
             });
         }
+
+        // Keep a denormalized interaction log optimized for recommendation queries.
+        await UserMangaLog.findOneAndUpdate(
+            { userId: userObjectId, mangaId: manga._id },
+            {
+                userId: userObjectId,
+                mangaId: manga._id,
+                status: status === "on_hold" ? "plan_to_read" : status,
+                isFavorite: Boolean(isFavorite),
+                lastInteractedAt: new Date(),
+            },
+            { upsert: true, new: true }
+        );
 
         res.status(200).json({
             message: "Reading status updated",
@@ -89,12 +103,16 @@ async function getReadingStatus(req, res) {
             userId: userObjectId,
             mangaId: manga._id
         });
+        const userLog = await UserMangaLog.findOne({
+            userId: userObjectId,
+            mangaId: manga._id
+        });
 
         if (!readingStatus) {
-            return res.status(200).json({ status: null });
+            return res.status(200).json({ status: null, isFavorite: Boolean(userLog?.isFavorite) });
         }
 
-        res.status(200).json({ status: readingStatus.status });
+        res.status(200).json({ status: readingStatus.status, isFavorite: Boolean(userLog?.isFavorite) });
     } catch (error) {
         console.error("Get reading status error:", error);
         return res.status(500).json({ error: "Failed to get reading status" });
@@ -159,6 +177,10 @@ async function removeReadingStatus(req, res) {
         }
 
         await ReadingStatus.deleteOne({
+            userId: userObjectId,
+            mangaId: manga._id
+        });
+        await UserMangaLog.deleteOne({
             userId: userObjectId,
             mangaId: manga._id
         });

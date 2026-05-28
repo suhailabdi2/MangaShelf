@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getUserMangaByStatus, MangaWithStatus, ReadingStatus } from '@/lib/api';
+import { useQueries } from '@tanstack/react-query';
+import { getSimilarRecommendations, getUserMangaByStatus, MangaWithStatus } from '@/lib/api';
 import UserMenu from '@/components/UserMenu';
+import RecommendationRail from '@/components/RecommendationRail';
 
 const STATUS_TABS: { value: string; label: string; color: string }[] = [
   { value: 'all', label: 'All', color: 'bg-gray-600' },
@@ -23,6 +25,15 @@ export default function MyLibraryPage() {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const seedManga = manga.slice(0, 2);
+
+  const becauseYouReadQueries = useQueries({
+    queries: seedManga.map((item) => ({
+      queryKey: ['library-similar', item.manga.mal_id],
+      queryFn: () => getSimilarRecommendations(Number(item.manga.mal_id), 8),
+      enabled: Boolean(item.manga.mal_id),
+    })),
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -212,6 +223,17 @@ export default function MyLibraryPage() {
             })}
           </div>
         )}
+
+        {seedManga.map((item, index) => (
+          <RecommendationRail
+            key={item._id}
+            title={`Because You Read ${item.manga.mangaTitle}`}
+            subtitle="Similar by genres, themes, and synopsis semantics."
+            data={becauseYouReadQueries[index]?.data}
+            loading={becauseYouReadQueries[index]?.isLoading}
+            compact
+          />
+        ))}
       </main>
     </div>
   );

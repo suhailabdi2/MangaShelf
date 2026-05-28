@@ -1,13 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import UserMenu from '@/components/UserMenu';
+import RecommendationShelf from '@/components/RecommendationShelf';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [loggedIn, setLoggedIn] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setLoggedIn(Boolean(localStorage.getItem('token')));
+    }
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +66,14 @@ export default function Home() {
               </button>
             </div>
           </form>
+          <div className="mb-8">
+            <Link
+              href="/recommendations"
+              className="inline-block px-6 py-3 border-2 border-black rounded-lg font-semibold hover:bg-black hover:text-white transition-colors"
+            >
+              View Recommendation Hub
+            </Link>
+          </div>
 
           {/* Features */}
           <div className="grid md:grid-cols-3 gap-8 mt-16">
@@ -90,6 +106,7 @@ export default function Home() {
             </div>
           </div>
         </div>
+        <RecommendationShelf loggedIn={loggedIn} />
       </main>
 
       {/* Footer */}

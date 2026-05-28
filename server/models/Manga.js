@@ -34,5 +34,38 @@ const mangaSchema = new mongoose.Schema({
         type:String,
         default:"Unknown"
     },
+    genres: {
+        type: [String],
+        default: []
+    },
+    tags: {
+        type: [String],
+        default: []
+    },
+    themes: {
+        type: [String],
+        default: []
+    },
+    demographics: {
+        type: [String],
+        default: []
+    },
+    popularityRank: {
+        type: Number,
+        default: 0
+    },
+    members: {
+        type: Number,
+        default: 0
+    },
+    favoritesCount: {
+        type: Number,
+        default: 0
+    },
 });
+
+mangaSchema.index({ mal_id: 1 }, { unique: true });
+mangaSchema.index({ genres: 1, themes: 1, demographics: 1 });
+mangaSchema.index({ popularityRank: 1, score: -1, reviewCount: -1 });
+
 module.exports = mongoose.model("Manga",mangaSchema);
